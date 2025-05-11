@@ -2,7 +2,7 @@
 
 ![Zentra Chatbot](Screenshots/Chat%20with%20BOB.png)
 ![Login Page](https://raw.githubusercontent.com/priynshgupta/zentra-web-chatbot/refs/heads/master/Screenshots/Login%20Page.png)
-![Register Page](Screenshots/Register%Page.png)
+![Register Page](https://raw.githubusercontent.com/priynshgupta/zentra-web-chatbot/refs/heads/master/Screenshots/Register%20Page.png)
 
 ## About
 
