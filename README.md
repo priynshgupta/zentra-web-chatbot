@@ -109,6 +109,8 @@ PORT=4000
 HUGGINGFACEHUB_API_TOKEN=your_huggingface_token_here
 ```
 
+- or If you are using LLM model Locally(Llama 3) their is no dependencies to install:
+
 ### 4. Set Up MongoDB
 
 Make sure MongoDB is running on your system. If you're using a cloud MongoDB instance, update the MONGODB_URI in your `.env` file.
