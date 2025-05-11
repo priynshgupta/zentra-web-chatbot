@@ -1,7 +1,7 @@
 # Zentra Chatbot
 
 ![Zentra Chatbot](Screenshots/Chat%20with%20BOB.png)
-![Login Page](Screenshots/Login%Page.png)
+![Login Page](https://raw.githubusercontent.com/priynshgupta/zentra-web-chatbot/refs/heads/master/Screenshots/Login%20Page.png)
 ![Register Page](Screenshots/Register%Page.png)
 
 ## About
