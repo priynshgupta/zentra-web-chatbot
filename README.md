@@ -1,8 +1,8 @@
 # Zentra Chatbot
 
 ![Zentra Chatbot](Screenshots/Chat%20with%20BOB.png)
-![Zentra Chatbot](Screenshots/Login%Page.png)
-![Zentra Chatbot](Screenshots/Register%Page.png)
+![Login Page](Screenshots/Login%Page.png)
+![Register Page](Screenshots/Register%Page.png)
 
 ## About
 
