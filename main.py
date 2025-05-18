@@ -33,6 +33,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Track abort flags by session/user id
 global_abort_flags = {}
 
+# Get API settings from environment variables or use defaults
+NODE_BACKEND_URL = os.environ.get('NODE_BACKEND_URL', 'http://localhost:4000')
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -48,7 +51,7 @@ def chat():
         website_url = None
         if chat_id:
             try:
-                node_url = f"http://localhost:4000/api/chat/{chat_id}"
+                node_url = f"{NODE_BACKEND_URL}/api/chat/{chat_id}"
                 resp = requests.get(node_url)
                 if resp.status_code == 200:
                     website_url = resp.json().get("websiteUrl")

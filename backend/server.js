@@ -8,19 +8,22 @@ const fs = require('fs');
 const path = require('path');
 const websiteRoutes = require('./routes/website');
 
-// Load environment variables from .env file (only for JWT_SECRET and NODE_PORT)
+// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true
+}));
 app.use(express.json());
 
-// MongoDB Connection - Explicitly set for local development
-const mongoUri = 'mongodb://localhost:27017/zentraChatbot';
+// MongoDB Connection - Use environment variable or fallback to local
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/zentraChatbot';
 console.log('\n=== Environment Variables Check ===');
-console.log('Explicitly using local MongoDB URI:', mongoUri);
+console.log('Using MongoDB URI:', mongoUri.replace(/mongodb\+srv:\/\/([^:]+):[^@]+@/, 'mongodb+srv://$1:****@')); // Hide password in logs
 console.log('================================\n');
 
 // Remove any existing MongoDB connection
@@ -29,7 +32,7 @@ mongoose.disconnect();
 // Clear mongoose connection cache
 mongoose.connection.close();
 
-// Connect to MongoDB with the explicit local URI
+// Connect to MongoDB
 mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,

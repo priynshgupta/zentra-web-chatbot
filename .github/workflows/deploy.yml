@@ -1,0 +1,39 @@
+name: ZentraChatbot CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Build and deploy
+      run: |
+        cd frontend
+        git config --global user.name ${{ github.actor }}
+        git config --global user.email ${{ github.actor }}@users.noreply.github.com
+        npm run deploy -- -u "github-actions-bot <support+actions@github.com>"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REACT_APP_API_URL: ${{ secrets.API_URL }}
+        REACT_APP_NODE_API_URL: ${{ secrets.API_URL }}
+        REACT_APP_FLASK_API_URL: ${{ secrets.API_URL }}
+        REACT_APP_GITHUB_PAGES: 'true'
+        PUBLIC_URL: https://${{ github.repository_owner }}.github.io/ZentraChatbot
