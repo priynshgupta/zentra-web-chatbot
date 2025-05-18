@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Login from './components/Login';
@@ -39,7 +39,7 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
+        <Router basename={process.env.PUBLIC_URL}>
           <Container>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -61,4 +61,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
