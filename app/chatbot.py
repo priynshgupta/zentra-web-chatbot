@@ -608,36 +608,54 @@ def ollama_generate(prompt, model="llama3"):
     if os.environ.get("HEROKU_APP_NAME"):
         # Option 1: Use OpenAI API if API key is configured
         if os.environ.get("OPENAI_API_KEY"):
-            import openai
-            openai.api_key = os.environ.get("OPENAI_API_KEY")
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "system", "content": "You are a helpful assistant."},
-                          {"role": "user", "content": prompt}],
-                max_tokens=1024,
-                temperature=0.7
-            )
-            return response.choices[0].message.content
+            try:
+                import openai
+                openai.api_key = os.environ.get("OPENAI_API_KEY")
+                logger.info("Using OpenAI API for response generation")
+                response = openai.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "system", "content": "You are a helpful assistant."},
+                              {"role": "user", "content": prompt}],
+                    max_tokens=1024,
+                    temperature=0.7
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"Error using OpenAI API: {e}")
+                # Fall through to next option if OpenAI fails
 
         # Option 2: Use Hugging Face API if API key is configured
-        elif os.environ.get("HUGGINGFACEHUB_API_TOKEN"):
-            from langchain_huggingface import HuggingFaceEndpoint
+        if os.environ.get("HUGGINGFACEHUB_API_TOKEN"):
+            try:
+                from langchain_huggingface import HuggingFaceEndpoint
+                logger.info("Using Hugging Face API for response generation")
+                llm = HuggingFaceEndpoint(
+                    endpoint_url=f"https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
+                    huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN"),
+                    task="text-generation",
+                    max_length=1024
+                )
+                return llm.invoke(prompt)
+            except Exception as e:
+                logger.error(f"Error using Hugging Face API: {e}")
+                # Fall through to fallback if Hugging Face fails
 
-            llm = HuggingFaceEndpoint(
-                endpoint_url=f"https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
-                huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN"),
-                task="text-generation",
-                max_length=1024
-            )
-            return llm.invoke(prompt)
+        # Option 3: Fallback to our dedicated fallback model implementation
+        try:
+            from app.fallback_model import get_fallback_model
+            logger.info("Using local fallback model")
 
-        # Option 3: Fallback to a simpler model if no API keys are available
-        else:
-            # Use a more lightweight model from Hugging Face
-            from transformers import pipeline
-            generator = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B')
-            result = generator(prompt, max_length=1024, do_sample=True, temperature=0.7)
-            return result[0]['generated_text'][len(prompt):]
+            # Check if we need to use minimal resources mode
+            if os.environ.get("MINIMAL_RESOURCES") == "true":
+                logger.info("Using minimal resources mode")
+
+            # Get properly configured fallback model
+            fallback_model = get_fallback_model()
+            return fallback_model(prompt)
+
+        except Exception as e:
+            logger.error(f"Error using fallback model: {e}")
+            return "I'm sorry, I couldn't process that request. The fallback language model encountered an error."
 
     # Local development - use Ollama
     else:
