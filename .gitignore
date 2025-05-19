@@ -35,8 +35,11 @@ var/
 .env.production.local
 
 # Vector store large files (can be regenerated)
-chroma/
-vector_store/
+chroma/*/
+vector_store/*/
+# Keep structure and mapping files
+!chroma/vector_store_map.json
+!vector_store/.gitkeep
 
 # Uploaded documents
 uploads/*
@@ -57,6 +60,11 @@ Thumbs.db
 # Log files
 logs/
 *.log
+
+# Temporary test files (development only)
+test_simple.py
+test-*.js
+cUserspriyaDesktopCollegeWorksZentraChatbotuploads/
 
 # Cache files
 .cache/
