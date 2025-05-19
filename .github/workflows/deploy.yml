@@ -32,8 +32,33 @@ jobs:
         npm run deploy -- -u "github-actions-bot <support+actions@github.com>"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REACT_APP_API_URL: ${{ secrets.API_URL }}
-        REACT_APP_NODE_API_URL: ${{ secrets.API_URL }}
-        REACT_APP_FLASK_API_URL: ${{ secrets.API_URL }}
+        REACT_APP_API_URL: ${{ secrets.HEROKU_NODE_URL }}
+        REACT_APP_NODE_API_URL: ${{ secrets.HEROKU_NODE_URL }}
+        REACT_APP_FLASK_API_URL: ${{ secrets.HEROKU_FLASK_URL }}
         REACT_APP_GITHUB_PAGES: 'true'
         PUBLIC_URL: https://${{ github.repository_owner }}.github.io/ZentraChatbot
+
+  deploy-node-backend:
+    runs-on: ubuntu-latest
+    needs: deploy-frontend
+    steps:
+    - uses: actions/checkout@v3
+    - name: Deploy to Heroku (Node.js)
+      uses: akhileshns/heroku-deploy@v3.12.14
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: ${{ secrets.HEROKU_NODE_APP_NAME }}
+        heroku_email: ${{ secrets.HEROKU_EMAIL }}
+        appdir: "backend"
+
+  deploy-flask-backend:
+    runs-on: ubuntu-latest
+    needs: deploy-node-backend
+    steps:
+    - uses: actions/checkout@v3
+    - name: Deploy to Heroku (Flask)
+      uses: akhileshns/heroku-deploy@v3.12.14
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: ${{ secrets.HEROKU_FLASK_APP_NAME }}
+        heroku_email: ${{ secrets.HEROKU_EMAIL }}

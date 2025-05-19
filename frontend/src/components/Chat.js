@@ -50,6 +50,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import BotLogo from '../assets/bot-logo.png';
+import apiService from '../services/apiService';
 
 const TypingDots = () => (
   <Box sx={{ display: 'flex', alignItems: 'center', height: 24 }}>
@@ -159,10 +160,9 @@ const Chat = () => {
       fetchChatHistory();
     }
   }, [user]);
-
   const fetchChatHistory = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/chat');
+      const response = await axios.get(apiService.chat.list);
       setChatHistory(response.data);
     } catch (error) {
       showError('Failed to fetch chat history', error.response?.data?.message);
