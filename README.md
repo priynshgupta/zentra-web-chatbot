@@ -9,6 +9,8 @@
 ![Register Page](Screenshots/Register%20Page.png)
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+[![Production Status](https://img.shields.io/badge/Production-Ready-brightgreen)](DEPLOYMENT.md)
+[![LLM Status](https://img.shields.io/badge/LLM-Fallback_Ready-blue)](FALLBACK-MODE.md)
 
 ## About
 
@@ -49,6 +51,8 @@ Traditional chatbots in banking, education, and e-commerce often frustrate users
 - **Frontend**: React with Material UI
 - **Backend**: Node.js with Express
 - **AI/ML**: Python with LangChain and vector embeddings
+  - Local Development: Ollama with Llama3
+  - Cloud Deployment: OpenAI API, Hugging Face API, or built-in fallback model
 - **Database**: MongoDB for user data and chat history
 - **Vector Database**: ChromaDB for efficient semantic search
 
@@ -193,10 +197,15 @@ Follow the setup instructions above to run locally.
 
 ### Cloud Deployment Options
 
-- **Frontend**: Deploy to Netlify, Vercel, or AWS Amplify
+- **Frontend**: Deploy to GitHub Pages, Netlify, or Vercel
 - **Backend**: Deploy to Heroku, AWS Elastic Beanstalk, or Google Cloud Run
-- **Python Service**: Deploy to AWS Lambda or Google Cloud Functions
+- **Python Service**: Deploy to Heroku with fallback LLM options
 - **Database**: MongoDB Atlas for cloud-hosted database
+
+For detailed deployment instructions, see:
+- [Deployment Guide](DEPLOYMENT.md)
+- [Heroku Setup](HEROKU-SETUP.md)
+- [Fallback Mode Documentation](FALLBACK-MODE.md)
 
 ## Contributing
 

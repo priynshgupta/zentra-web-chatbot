@@ -23,6 +23,15 @@
     "HUGGINGFACEHUB_API_TOKEN": {
       "description": "Hugging Face API token for LLM access (optional)",
       "required": false
+    },
+    "MINIMAL_RESOURCES": {
+      "description": "Set to 'true' to use a smaller model with minimal resource requirements (for free tier)",
+      "value": "false",
+      "required": false
+    },
+    "FALLBACK_MODEL_NAME": {
+      "description": "Custom fallback model name for Hugging Face Transformers (optional)",
+      "required": false
     }
   },
   "buildpacks": [
