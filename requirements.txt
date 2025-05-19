@@ -16,6 +16,7 @@ huggingface-hub>=0.23.0
 transformers==4.38.2
 torch>=2.2.0
 sentence-transformers==2.3.1
+openai>=1.0.0
 
 # Document processing
 PyPDF2==3.0.1
