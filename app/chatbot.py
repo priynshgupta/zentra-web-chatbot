@@ -638,20 +638,25 @@ def ollama_generate(prompt, model="llama3"):
                 return llm.invoke(prompt)
             except Exception as e:
                 logger.error(f"Error using Hugging Face API: {e}")
-                # Fall through to fallback if Hugging Face fails
-
-        # Option 3: Fallback to our dedicated fallback model implementation
+                # Fall through to fallback if Hugging Face fails        # Option 3: Fallback to our dedicated fallback model implementation
         try:
-            from app.fallback_model import get_fallback_model
-            logger.info("Using local fallback model")
+            # In production with Redis, use worker process
+            if os.environ.get("HEROKU_APP_NAME") and os.environ.get("REDIS_URL"):
+                from app.worker_client import generate_via_worker
+                logger.info("Using worker process for fallback model")
+                return generate_via_worker(prompt)
+            # Direct model usage (development or simple deployment)
+            else:
+                from app.fallback_model import get_fallback_model
+                logger.info("Using local fallback model")
 
-            # Check if we need to use minimal resources mode
-            if os.environ.get("MINIMAL_RESOURCES") == "true":
-                logger.info("Using minimal resources mode")
+                # Check if we need to use minimal resources mode
+                if os.environ.get("MINIMAL_RESOURCES") == "true":
+                    logger.info("Using minimal resources mode")
 
-            # Get properly configured fallback model
-            fallback_model = get_fallback_model()
-            return fallback_model(prompt)
+                # Get properly configured fallback model
+                fallback_model = get_fallback_model()
+                return fallback_model(prompt)
 
         except Exception as e:
             logger.error(f"Error using fallback model: {e}")

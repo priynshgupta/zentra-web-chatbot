@@ -38,12 +38,16 @@
     {
       "url": "heroku/python"
     }
-  ],
-  "addons": [
-    "mongolab:sandbox"
+  ],  "addons": [
+    "mongolab:sandbox",
+    "heroku-redis:hobby-dev"
   ],
   "formation": {
     "web": {
+      "quantity": 1,
+      "size": "basic"
+    },
+    "worker": {
       "quantity": 1,
       "size": "basic"
     }
