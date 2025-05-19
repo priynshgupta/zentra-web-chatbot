@@ -37,6 +37,8 @@ var/
 # Vector store large files (can be regenerated)
 chroma/*/
 vector_store/*/
+vector_store/*.sqlite3
+*.sqlite3
 # Keep structure and mapping files
 !chroma/vector_store_map.json
 !vector_store/.gitkeep
