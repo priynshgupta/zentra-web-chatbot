@@ -47,6 +47,31 @@ Performance varies based on the selected model:
 | EleutherAI/gpt-neo-1.3B | 2-3 GB | 3-8 seconds | Good |
 | distilgpt2 | 500-700 MB | 1-3 seconds | Basic |
 
+## Architecture
+
+ZentraChatbot implements two different architectural patterns for fallback mode:
+
+### 1. Direct Model Integration
+
+For simpler deployments or development environments, the fallback model is loaded directly within the main Flask application process. This approach is suitable for development and testing, but may cause issues in production due to memory constraints and potential timeouts during model loading.
+
+### 2. Worker-Based Architecture (Production)
+
+For production deployments, ZentraChatbot uses a worker-based architecture:
+
+```
+┌───────────────┐     ┌───────┐     ┌───────────────┐
+│ Flask Web App │◄────►│ Redis │◄────►│ Worker Process│
+└───────────────┘     └───────┘     └───────────────┘
+     (API Layer)      (Message Queue)   (Model Host)
+```
+
+**Benefits:**
+- The model stays loaded in memory in the worker process
+- Web requests won't time out during model initialization
+- Separate scaling of web and worker dynos
+- Graceful handling of high load scenarios
+
 ## Configuration
 
 ### Environment Variables
@@ -55,6 +80,7 @@ Performance varies based on the selected model:
 |----------|-------------|---------|----------|
 | `FALLBACK_MODEL_NAME` | Custom Hugging Face model identifier | EleutherAI/gpt-neo-1.3B | No |
 | `MINIMAL_RESOURCES` | Set to "true" for minimal resources mode | false | No |
+| `REDIS_URL` | Redis connection URL (for worker architecture) | *Provided by Heroku* | No |
 
 ### Testing Fallback Mode
 
@@ -104,7 +130,26 @@ The `/health` endpoint provides information about the current LLM configuration:
 
 If you encounter issues with the fallback model:
 
-1. Check Heroku logs for errors: `heroku logs --tail --app your-app-name`
-2. Verify memory usage: `heroku ps --app your-app-name`
-3. Try switching to minimal resources mode if facing memory limitations
-4. Ensure the application has time to download the model on first initialization
+1. Check Heroku logs for errors:
+   - Web dyno: `heroku logs --tail --app your-app-name`
+   - Worker dyno: `heroku logs --tail --app your-app-name --dyno worker`
+
+2. Verify dyno status and memory usage:
+   - `heroku ps --app your-app-name`
+
+3. Check if worker is running:
+   - `heroku ps:scale worker=1 --app your-app-name`
+   - Visit `/health` endpoint to see worker_active status
+
+4. Model loading issues:
+   - The first request after deployment may be slow as the model downloads
+   - Try running `heroku run python heroku_prepare.py --app your-app-name` to pre-download the model
+   - Switch to minimal resources mode if needed: `heroku config:set MINIMAL_RESOURCES=true --app your-app-name`
+
+5. Redis connection issues:
+   - Check if Redis is provisioned: `heroku addons --app your-app-name`
+   - If not, add it: `heroku addons:create heroku-redis:hobby-dev --app your-app-name`
+
+6. Memory errors:
+   - Try upgrading to a Standard-1X dyno if using Free or Eco: `heroku ps:resize worker=standard-1x --app your-app-name`
+   - Enable swap: `heroku features:enable runtime-dyno-metadata --app your-app-name`

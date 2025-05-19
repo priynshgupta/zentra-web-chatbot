@@ -60,14 +60,31 @@ def health_check():
         llm_details = {"provider": "OpenAI", "model": "gpt-3.5-turbo"}
     elif os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
         llm_status = "huggingface"
-        llm_details = {"provider": "Hugging Face", "model": "Meta-Llama-3-8B-Instruct"}
-    elif os.environ.get('HEROKU_APP_NAME'):
+        llm_details = {"provider": "Hugging Face", "model": "Meta-Llama-3-8B-Instruct"}    elif os.environ.get('HEROKU_APP_NAME'):
         # Fallback model in production
         llm_status = "fallback"
         model_name = os.environ.get("FALLBACK_MODEL_NAME", "EleutherAI/gpt-neo-1.3B")
         if os.environ.get("MINIMAL_RESOURCES") == "true":
             model_name = "distilgpt2"
-        llm_details = {"provider": "Hugging Face Transformers", "model": model_name}
+
+        # Check if worker is active via Redis
+        worker_active = False
+        if os.environ.get("REDIS_URL"):
+            try:
+                import redis
+                import time
+
+                r = redis.from_url(os.environ.get("REDIS_URL"))
+                r.setex("zentrachatbot:health_check", 10, str(time.time()))
+                worker_active = True
+            except:
+                worker_active = False
+
+        llm_details = {
+            "provider": "Hugging Face Transformers",
+            "model": model_name,
+            "worker_active": worker_active
+        }
     else:
         llm_status = "local_llama3"
         llm_details = {"provider": "Ollama", "model": "llama3"}
