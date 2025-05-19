@@ -60,7 +60,8 @@ def health_check():
         llm_details = {"provider": "OpenAI", "model": "gpt-3.5-turbo"}
     elif os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
         llm_status = "huggingface"
-        llm_details = {"provider": "Hugging Face", "model": "Meta-Llama-3-8B-Instruct"}    elif os.environ.get('HEROKU_APP_NAME'):
+        llm_details = {"provider": "Hugging Face", "model": "Meta-Llama-3-8B-Instruct"}
+    elif os.environ.get('HEROKU_APP_NAME'):
         # Fallback model in production
         llm_status = "fallback"
         model_name = os.environ.get("FALLBACK_MODEL_NAME", "EleutherAI/gpt-neo-1.3B")
