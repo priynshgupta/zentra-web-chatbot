@@ -36,6 +36,15 @@ global_abort_flags = {}
 # Get API settings from environment variables or use defaults
 NODE_BACKEND_URL = os.environ.get('NODE_BACKEND_URL', 'http://localhost:4000')
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for Heroku deployment"""
+    return jsonify({
+        "status": "ok",
+        "version": "1.0.0",
+        "service": "ZentraChatbot Flask API"
+    })
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:

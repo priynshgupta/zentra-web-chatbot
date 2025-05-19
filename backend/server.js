@@ -20,6 +20,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check endpoint for Heroku
+app.get('/api/auth/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '1.0.0',
+    service: 'ZentraChatbot Node.js API'
+  });
+});
+
 // MongoDB Connection - Use environment variable or fallback to local
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/zentraChatbot';
 console.log('\n=== Environment Variables Check ===');

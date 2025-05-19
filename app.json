@@ -1,0 +1,39 @@
+{
+  "name": "ZentraChatbot",
+  "description": "AI-powered chatbot for websites and document analysis",
+  "repository": "https://github.com/yourusername/ZentraChatbot",
+  "logo": "https://raw.githubusercontent.com/yourusername/ZentraChatbot/main/frontend/public/bot-logo.png",
+  "keywords": ["chatbot", "ai", "nlp", "document-analysis", "website-analyzer"],
+  "env": {
+    "JWT_SECRET": {
+      "description": "A secret key for JWT token generation",
+      "generator": "secret"
+    },
+    "CORS_ORIGIN": {
+      "description": "The URL of your frontend (GitHub Pages)",
+      "value": "https://your-github-username.github.io/ZentraChatbot"
+    },
+    "NODE_BACKEND_URL": {
+      "description": "The URL of the Node.js backend",
+      "value": "https://zentrachatbot-node.herokuapp.com"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "addons": [
+    "mongolab:sandbox"
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "success_url": "/health",
+  "scripts": {
+    "postdeploy": "python -c 'import nltk; nltk.download(\"punkt\"); nltk.download(\"stopwords\")'"
+  }
+}

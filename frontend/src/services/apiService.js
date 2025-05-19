@@ -4,7 +4,7 @@
 const getApiBaseUrl = () => {
   // For production (GitHub Pages)
   if (process.env.REACT_APP_GITHUB_PAGES === 'true') {
-    return process.env.REACT_APP_API_URL || 'https://your-digitalocean-domain-or-ip';
+    return process.env.REACT_APP_API_URL || 'https://zentrachatbot-node.herokuapp.com';
   }
 
   // For local development
@@ -13,7 +13,7 @@ const getApiBaseUrl = () => {
 
 const getFlaskApiUrl = () => {
   if (process.env.REACT_APP_GITHUB_PAGES === 'true') {
-    return process.env.REACT_APP_FLASK_API_URL || 'https://your-digitalocean-domain-or-ip:5000';
+    return process.env.REACT_APP_FLASK_API_URL || 'https://zentrachatbot-flask.herokuapp.com';
   }
 
   return 'http://localhost:5000';
