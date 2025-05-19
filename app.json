@@ -3,8 +3,7 @@
   "description": "AI-powered chatbot for websites and document analysis",
   "repository": "https://github.com/yourusername/ZentraChatbot",
   "logo": "https://raw.githubusercontent.com/yourusername/ZentraChatbot/main/frontend/public/bot-logo.png",
-  "keywords": ["chatbot", "ai", "nlp", "document-analysis", "website-analyzer"],
-  "env": {
+  "keywords": ["chatbot", "ai", "nlp", "document-analysis", "website-analyzer"],  "env": {
     "JWT_SECRET": {
       "description": "A secret key for JWT token generation",
       "generator": "secret"
@@ -16,6 +15,14 @@
     "NODE_BACKEND_URL": {
       "description": "The URL of the Node.js backend",
       "value": "https://zentrachatbot-node.herokuapp.com"
+    },
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API key for using GPT models (optional)",
+      "required": false
+    },
+    "HUGGINGFACEHUB_API_TOKEN": {
+      "description": "Hugging Face API token for LLM access (optional)",
+      "required": false
     }
   },
   "buildpacks": [

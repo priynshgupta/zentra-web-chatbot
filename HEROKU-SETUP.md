@@ -76,6 +76,10 @@ With the GitHub Student Developer Pack, you receive:
    ```bash
    heroku config:set NODE_BACKEND_URL=https://zentrachatbot-node.herokuapp.com
    heroku config:set FLASK_ENV=production
+
+   # For LLM API access (choose one or both)
+   heroku config:set OPENAI_API_KEY=your_openai_api_key_here
+   heroku config:set HUGGINGFACEHUB_API_TOKEN=your_huggingface_token_here
    ```
 
 3. Deploy to Heroku:

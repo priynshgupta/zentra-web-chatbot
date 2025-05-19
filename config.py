@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# HuggingFace API Token
+# API Tokens for LLMs
 HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Vector Store Configuration
 VECTOR_STORE_PATH = os.getenv("VECTOR_STORE_PATH", "vector_store")

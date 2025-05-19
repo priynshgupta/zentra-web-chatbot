@@ -142,7 +142,7 @@ class DynamicChatbot:
             main_content, main_error, main_type = get_page_content(url, headers, use_selenium=True)
 
             if not main_content:
-                if main_error:
+                if (main_error):
                     return False, main_error
                 return False, "Could not access the main page of the website."
 
@@ -600,14 +600,60 @@ def process_document(filepath):
     return chatbot.process_document(filepath)
 
 def ollama_generate(prompt, model="llama3"):
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={"model": model, "prompt": prompt}
-    )
-    response.raise_for_status()
-    result = ""
-    for line in response.text.strip().splitlines():
-        if line.strip():
-            data = json.loads(line)
-            result += data.get("response", "")
-    return result
+    """
+    Generate text using the specified model.
+    Falls back to OpenAI or Hugging Face API when deployed.
+    """
+    # Check if we're in a deployed environment (Heroku)
+    if os.environ.get("HEROKU_APP_NAME"):
+        # Option 1: Use OpenAI API if API key is configured
+        if os.environ.get("OPENAI_API_KEY"):
+            import openai
+            openai.api_key = os.environ.get("OPENAI_API_KEY")
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "system", "content": "You are a helpful assistant."},
+                          {"role": "user", "content": prompt}],
+                max_tokens=1024,
+                temperature=0.7
+            )
+            return response.choices[0].message.content
+
+        # Option 2: Use Hugging Face API if API key is configured
+        elif os.environ.get("HUGGINGFACEHUB_API_TOKEN"):
+            from langchain_huggingface import HuggingFaceEndpoint
+
+            llm = HuggingFaceEndpoint(
+                endpoint_url=f"https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct",
+                huggingfacehub_api_token=os.environ.get("HUGGINGFACEHUB_API_TOKEN"),
+                task="text-generation",
+                max_length=1024
+            )
+            return llm.invoke(prompt)
+
+        # Option 3: Fallback to a simpler model if no API keys are available
+        else:
+            # Use a more lightweight model from Hugging Face
+            from transformers import pipeline
+            generator = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B')
+            result = generator(prompt, max_length=1024, do_sample=True, temperature=0.7)
+            return result[0]['generated_text'][len(prompt):]
+
+    # Local development - use Ollama
+    else:
+        try:
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={"model": model, "prompt": prompt}
+            )
+            response.raise_for_status()
+            result = ""
+            for line in response.text.strip().splitlines():
+                if line.strip():
+                    data = json.loads(line)
+                    result += data.get("response", "")
+            return result
+        except Exception as e:
+            print(f"Error using Ollama: {e}")
+            # Fallback to a simple response if Ollama is not available
+            return "I'm sorry, I couldn't process that request. The language model is currently unavailable."

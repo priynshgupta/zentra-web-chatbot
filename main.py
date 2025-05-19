@@ -36,9 +36,37 @@ global_abort_flags = {}
 # Get API settings from environment variables or use defaults
 NODE_BACKEND_URL = os.environ.get('NODE_BACKEND_URL', 'http://localhost:4000')
 
+# Check LLM configuration for deployment environments
+if os.environ.get('HEROKU_APP_NAME'):
+    if not os.environ.get('OPENAI_API_KEY') and not os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
+        logger.warning("======================================================================")
+        logger.warning("WARNING: No LLM API keys configured for deployment.")
+        logger.warning("The application will fall back to a lightweight model which may not")
+        logger.warning("perform as well as Llama3. Please configure either OPENAI_API_KEY or")
+        logger.warning("HUGGINGFACEHUB_API_TOKEN environment variables for optimal performance.")
+        logger.warning("======================================================================")
+    else:
+        logger.info("LLM API keys configured successfully for deployment.")
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for Heroku deployment"""
+    # Check LLM configuration
+    llm_status = "unconfigured"
+    if os.environ.get('OPENAI_API_KEY'):
+        llm_status = "openai"
+    elif os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
+        llm_status = "huggingface"
+    elif not os.environ.get('HEROKU_APP_NAME'):
+        llm_status = "local_llama3"
+
+    return jsonify({
+        "status": "ok",
+        "version": "1.0.0",
+        "service": "ZentraChatbot Flask API",
+        "llm": llm_status,
+        "environment": "production" if os.environ.get('HEROKU_APP_NAME') else "development"
+    })
     return jsonify({
         "status": "ok",
         "version": "1.0.0",
