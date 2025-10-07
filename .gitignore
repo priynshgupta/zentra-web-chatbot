@@ -39,6 +39,11 @@ chroma/*/
 vector_store/*/
 vector_store/*.sqlite3
 *.sqlite3
+*.db
+# ChromaDB specific files
+**/chroma.sqlite3
+**/chroma.sqlite3-*
+chroma_data/
 # Keep structure and mapping files
 !chroma/vector_store_map.json
 !vector_store/.gitkeep
