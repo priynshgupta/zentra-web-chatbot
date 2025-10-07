@@ -9,8 +9,8 @@
 ![Register Page](Screenshots/Register%20Page.png)
 
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-[![Production Status](https://img.shields.io/badge/Production-Ready-brightgreen)](DEPLOYMENT.md)
-[![LLM Status](https://img.shields.io/badge/LLM-Fallback_Ready-blue)](FALLBACK-MODE.md)
+[![Local Setup Ready](https://img.shields.io/badge/Local_Setup-Ready-brightgreen)](LOCAL-SETUP.md)
+[![LLM Support](https://img.shields.io/badge/LLM-Ollama_Llama3-blue)](LOCAL-SETUP.md)
 
 ## About
 

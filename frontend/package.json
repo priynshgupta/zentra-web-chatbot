@@ -2,7 +2,6 @@
   "name": "zentrachatbot-frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://your-github-username.github.io/ZentraChatbot",
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",

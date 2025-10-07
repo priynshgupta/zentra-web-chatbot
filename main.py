@@ -24,11 +24,20 @@ logger = logging.getLogger(__name__)
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app)
+# CORS will be handled manually via after_request to avoid conflicts
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Add explicit CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 # Track abort flags by session/user id
 global_abort_flags = {}
@@ -36,71 +45,26 @@ global_abort_flags = {}
 # Get API settings from environment variables or use defaults
 NODE_BACKEND_URL = os.environ.get('NODE_BACKEND_URL', 'http://localhost:4000')
 
-# Check LLM configuration for deployment environments
-if os.environ.get('HEROKU_APP_NAME'):
-    if not os.environ.get('OPENAI_API_KEY') and not os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
-        logger.warning("======================================================================")
-        logger.warning("WARNING: No LLM API keys configured for deployment.")
-        logger.warning("The application will fall back to a lightweight model which may not")
-        logger.warning("perform as well as Llama3. Please configure either OPENAI_API_KEY or")
-        logger.warning("HUGGINGFACEHUB_API_TOKEN environment variables for optimal performance.")
-        logger.warning("======================================================================")
-    else:
-        logger.info("LLM API keys configured successfully for deployment.")
+# Setup for local development
+logger.info("ZentraChatbot starting in local development mode")
+logger.info("Make sure Ollama is running with the Llama3 model for optimal performance")
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint for Heroku deployment"""
-    # Check LLM configuration
-    llm_status = "unconfigured"
-    llm_details = {}
-
-    if os.environ.get('OPENAI_API_KEY'):
-        llm_status = "openai"
-        llm_details = {"provider": "OpenAI", "model": "gpt-3.5-turbo"}
-    elif os.environ.get('HUGGINGFACEHUB_API_TOKEN'):
-        llm_status = "huggingface"
-        llm_details = {"provider": "Hugging Face", "model": "Meta-Llama-3-8B-Instruct"}
-    elif os.environ.get('HEROKU_APP_NAME'):
-        # Fallback model in production
-        llm_status = "fallback"
-        model_name = os.environ.get("FALLBACK_MODEL_NAME", "EleutherAI/gpt-neo-1.3B")
-        if os.environ.get("MINIMAL_RESOURCES") == "true":
-            model_name = "distilgpt2"
-
-        # Check if worker is active via Redis
-        worker_active = False
-        if os.environ.get("REDIS_URL"):
-            try:
-                import redis
-                import time
-
-                r = redis.from_url(os.environ.get("REDIS_URL"))
-                r.setex("zentrachatbot:health_check", 10, str(time.time()))
-                worker_active = True
-            except:
-                worker_active = False
-
-        llm_details = {
-            "provider": "Hugging Face Transformers",
-            "model": model_name,
-            "worker_active": worker_active
-        }
-    else:
-        llm_status = "local_llama3"
-        llm_details = {"provider": "Ollama", "model": "llama3"}
-
+    """Health check endpoint"""
     return jsonify({
         "status": "ok",
         "version": "1.0.0",
         "service": "ZentraChatbot Flask API",
-        "llm": llm_status,
-        "llm_details": llm_details,
-        "environment": "production" if os.environ.get('HEROKU_APP_NAME') else "development"
+        "llm": "local_ollama",
+        "environment": "development"
     })
 
-@app.route('/chat', methods=['POST'])
+@app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
+    # Handle CORS preflight request - headers handled by after_request
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         data = request.get_json()
         user_id = data.get("user_id")

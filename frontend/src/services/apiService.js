@@ -1,21 +1,13 @@
 // API Configuration service for ZentraChatbot
-// This file centralizes API endpoint configuration for deployment
+// This file centralizes API endpoint configuration for development
 
 const getApiBaseUrl = () => {
-  // For production (GitHub Pages)
-  if (process.env.REACT_APP_GITHUB_PAGES === 'true') {
-    return process.env.REACT_APP_API_URL || 'https://zentrachatbot-node.herokuapp.com';
-  }
-
-  // For local development
+  // For local development (default)
   return 'http://localhost:4000';
 };
 
 const getFlaskApiUrl = () => {
-  if (process.env.REACT_APP_GITHUB_PAGES === 'true') {
-    return process.env.REACT_APP_FLASK_API_URL || 'https://zentrachatbot-flask.herokuapp.com';
-  }
-
+  // For local development (default)
   return 'http://localhost:5000';
 };
 
