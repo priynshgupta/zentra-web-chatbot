@@ -45,9 +45,53 @@ global_abort_flags = {}
 # Get API settings from environment variables or use defaults
 NODE_BACKEND_URL = os.environ.get('NODE_BACKEND_URL', 'http://localhost:4000')
 
+# GPU Status Check Function
+def check_gpu_status():
+    """Check if GPU is available and Ollama is using it"""
+    try:
+        import subprocess
+        result = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.used,memory.total', '--format=csv,noheader,nounits'],
+                              capture_output=True, text=True, check=True)
+        gpu_info = result.stdout.strip().split(', ')
+        if len(gpu_info) >= 3:
+            gpu_name = gpu_info[0]
+            memory_used = gpu_info[1]
+            memory_total = gpu_info[2]
+            logger.info(f"🚀 GPU Detected: {gpu_name}")
+            logger.info(f"📊 GPU Memory: {memory_used}MB / {memory_total}MB used")
+            return True
+    except Exception as e:
+        logger.warning(f"⚠️ GPU not detected or nvidia-smi not available: {e}")
+        return False
+
+def check_ollama_gpu():
+    """Check if Ollama is configured for GPU use"""
+    try:
+        response = requests.get('http://localhost:11434/api/ps', timeout=5)
+        if response.status_code == 200:
+            models = response.json().get('models', [])
+            if models:
+                logger.info("🤖 Ollama is running with loaded models")
+                for model in models:
+                    logger.info(f"   - Model: {model.get('name', 'Unknown')}")
+            else:
+                logger.info("🤖 Ollama is running but no models loaded")
+            return True
+    except Exception as e:
+        logger.warning(f"⚠️ Ollama not accessible: {e}")
+        return False
+
 # Setup for local development
-logger.info("ZentraChatbot starting in local development mode")
-logger.info("Make sure Ollama is running with the Llama3 model for optimal performance")
+logger.info("🚀 ZentraChatbot starting in GPU-accelerated mode")
+gpu_available = check_gpu_status()
+ollama_running = check_ollama_gpu()
+
+if gpu_available and ollama_running:
+    logger.info("✅ GPU acceleration ready - All text generation will use GPU")
+elif gpu_available and not ollama_running:
+    logger.warning("⚠️ GPU available but Ollama not running. Start Ollama with: ollama serve")
+else:
+    logger.warning("⚠️ GPU not available - falling back to CPU (will be slower)")
 
 @app.route('/health', methods=['GET'])
 def health_check():

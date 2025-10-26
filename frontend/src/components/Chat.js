@@ -587,6 +587,8 @@ const Chat = () => {
 
   const loadChat = async (id) => {
     try {
+      setLoading(true); // Show loading state while switching chats
+      setError(''); // Clear any previous errors
       setChatId(id);
       setShowNewChatDialog(false); // Close any open new chat dialog
 
@@ -599,11 +601,26 @@ const Chat = () => {
       };
 
       console.log('Loading chat with ID:', id);
+      console.log('Using config:', config);
       const response = await axios.get(`http://localhost:4000/api/chat/${id}`, config);
+
+      // Check if response exists and is valid
+      if (!response || !response.data) {
+        console.error('Invalid response:', response);
+        throw new Error('No response data received from server');
+      }
+
+      console.log('Raw response:', response.data);
 
       if (response.data && response.data.messages) {
         console.log('Chat loaded successfully with', response.data.messages.length, 'messages');
         setMessages(response.data.messages);
+
+        // ✅ FIX: Set the websiteUrl from the loaded chat data
+        if (response.data.websiteUrl) {
+          setWebsiteUrl(response.data.websiteUrl);
+          console.log('Website context restored:', response.data.websiteUrl);
+        }
 
         // If there are no messages yet, add a welcome message
         if (response.data.messages.length === 0 && response.data.websiteUrl) {
@@ -611,6 +628,9 @@ const Chat = () => {
             { role: 'assistant', content: `✅ Website loaded: ${response.data.websiteUrl}` },
             { role: 'assistant', content: 'You can now ask questions about this website.' }
           ]);
+        } else if (response.data.websiteUrl && response.data.messages.length > 0) {
+          // Chat already has messages and website context - ready to continue conversation
+          console.log('Chat ready with website context:', response.data.websiteUrl);
         }
       } else {
         console.error('Invalid chat response:', response.data);
@@ -618,7 +638,9 @@ const Chat = () => {
       }
     } catch (error) {
       console.error('Failed to load chat:', error);
-      setError(`Failed to load chat: ${error.response?.data?.message || error.message}`);
+      setError('Failed to load chat: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false); // Hide loading state
     }
   };
 
@@ -705,7 +727,7 @@ const Chat = () => {
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       {/* Sidebar */}
       <Box sx={{
-        width: 280,
+        width: 300,
         bgcolor: '#23262F',
         color: '#fff',
         display: 'flex',
@@ -733,6 +755,8 @@ const Chat = () => {
           flexGrow: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
+          direction: 'rtl', // Right to left to move scrollbar to left
+          '& > *': { direction: 'ltr' }, // Reset content direction
           '&::-webkit-scrollbar': {
             width: '8px',
             backgroundColor: '#181A20',
@@ -1002,6 +1026,35 @@ const Chat = () => {
                 }}
               >
                 <Box sx={{ p: 3, width: '100%', maxWidth: '800px', mx: 'auto', flex: 1 }}>
+                  {/* Website Context Indicator */}
+                  {websiteUrl && chatId && (
+                    <Box sx={{
+                      mb: 2,
+                      p: 2,
+                      bgcolor: 'rgba(90, 107, 255, 0.1)',
+                      border: '1px solid rgba(90, 107, 255, 0.3)',
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}>
+                      <WebIcon sx={{ color: '#5A6BFF', fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ color: '#5A6BFF', fontWeight: 500 }}>
+                        ✅ Website loaded: {websiteUrl}
+                      </Typography>
+                      <Chip
+                        label="You can now ask questions about this website"
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(90, 107, 255, 0.2)',
+                          color: '#5A6BFF',
+                          fontSize: '0.75rem',
+                          height: 24
+                        }}
+                      />
+                    </Box>
+                  )}
+
                   {messages.map((msg, idx) => (
                     <Box
                       key={idx}
@@ -1149,7 +1202,7 @@ const Chat = () => {
       </Box>
       {/* Right Panel */}
       <Box sx={{
-        width: 350,
+        width: 300,
         bgcolor: '#23262F',
         color: '#fff',
         display: 'flex',
@@ -1180,6 +1233,8 @@ const Chat = () => {
             overflowY: 'auto',
             overflowX: 'hidden',
             maxHeight: 'calc(50vh - 130px)',
+            direction: 'rtl', // Right to left to move scrollbar to left
+            '& > *': { direction: 'ltr' }, // Reset content direction
             '&::-webkit-scrollbar': {
               width: '8px',
               backgroundColor: '#181A20',
@@ -1213,27 +1268,86 @@ const Chat = () => {
                   mb: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between'
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    bgcolor: '#1F222A',
+                    '& .website-url': {
+                      transform: 'translateX(-80px)', // Reduced distance - move text left when hovered
+                      transition: 'transform 0.6s ease-in-out' // Slower animation - reduced speed
+                    },
+                    '& .action-buttons': {
+                      opacity: 1,
+                      visibility: 'visible'
+                    }
+                  }
                 }}
               >
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{website.url}</Typography>
+                <Box
+                  className="website-url"
+                  sx={{
+                    flex: 1,
+                    transition: 'transform 0.6s ease-in-out', // Slower animation - reduced speed
+                    pr: 2
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '200px'
+                    }}
+                  >
+                    {website.url}
+                  </Typography>
                   <Typography variant="caption" color="grey.400">
                     {website.timestamp ? new Date(website.timestamp).toLocaleString() : 'Timestamp not available'}
                   </Typography>
                 </Box>
-                <Box>
+                <Box
+                  className="action-buttons"
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    opacity: 1, // Always visible
+                    visibility: 'visible',
+                    display: 'flex',
+                    flexDirection: 'column', // Stack buttons vertically
+                    gap: 0.3, // Reduced gap for stacked layout
+                    bgcolor: '#181A20',
+                    borderRadius: 1,
+                    p: 0.4 // Slightly reduced padding
+                  }}
+                >
                   <Button
                     size="small"
+                    variant="contained"
                     color="primary"
-                    sx={{ mr: 1 }}
+                    sx={{
+                      minWidth: '60px', // Increased width for stacked layout
+                      fontSize: '0.65rem',
+                      py: 0.3, // Reduced padding for compact stacked buttons
+                      px: 1
+                    }}
                     onClick={() => handleWebsiteSelect(website)}
                   >
                     LOAD
                   </Button>
                   <Button
                     size="small"
+                    variant="contained"
                     color="error"
+                    sx={{
+                      minWidth: '60px', // Consistent width
+                      fontSize: '0.65rem',
+                      py: 0.3, // Reduced padding for compact stacked buttons
+                      px: 1
+                    }}
                     onClick={() => removeWebsite(website.url)}
                   >
                     REMOVE

@@ -602,21 +602,53 @@ def process_document(filepath):
 def ollama_generate(prompt, model="llama3"):
     """
     Generate text using the specified model.
-    Prioritizes local Ollama for development.
+    Prioritizes local Ollama for development with GPU acceleration.
     """
     # First, try local Ollama (for development)
     try:
+        # Enhanced configuration for GPU acceleration
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "options": {
+                "num_gpu": -1,  # Use all available GPUs
+                "num_thread": 8,  # Optimize CPU threads for GPU offloading
+                "temperature": 0.7,
+                "top_k": 40,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
+                "seed": -1,
+                "num_ctx": 4096,  # Context window
+                "use_mmap": True,
+                "use_mlock": True
+            },
+            "stream": False  # Get complete response for better error handling
+        }
+
+        logger.info(f"🚀 Generating response using GPU-accelerated {model}")
         response = requests.post(
             "http://localhost:11434/api/generate",
-            json={"model": model, "prompt": prompt}
+            json=payload,
+            timeout=120  # Increased timeout for large responses
         )
         response.raise_for_status()
-        result = ""
-        for line in response.text.strip().splitlines():
-            if line.strip():
-                data = json.loads(line)
-                result += data.get("response", "")
-        return result
+
+        # Parse response - handle both streaming and non-streaming
+        if response.headers.get('content-type', '').startswith('application/x-ndjson'):
+            # Streaming response
+            result = ""
+            for line in response.text.strip().splitlines():
+                if line.strip():
+                    data = json.loads(line)
+                    result += data.get("response", "")
+            logger.info(f"✅ GPU-accelerated response generated ({len(result)} chars)")
+            return result
+        else:
+            # Non-streaming response
+            data = response.json()
+            result = data.get("response", "")
+            logger.info(f"✅ GPU-accelerated response generated ({len(result)} chars)")
+            return result
     except Exception as e:
         logger.warning(f"Local Ollama not available: {e}")
 
