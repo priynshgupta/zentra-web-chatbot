@@ -33,6 +33,63 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 VECTOR_STORE_PATH = os.path.join(os.path.dirname(__file__), '..', 'chroma')
 MAPPING_FILE = os.path.join(VECTOR_STORE_PATH, 'vector_store_map.json')
 
+# Global session manager to maintain chatbot instances per chat
+class ChatSessionManager:
+    """Manages chatbot instances for different chat sessions"""
+    def __init__(self):
+        self.sessions = {}  # chat_id -> chatbot instance
+        logger.info("🔧 ChatSessionManager initialized")
+
+    def get_or_create_session(self, chat_id, website_url):
+        """Get existing chatbot for chat_id or create new one"""
+        if chat_id in self.sessions:
+            chatbot = self.sessions[chat_id]
+            logger.info(f"♻️ Reusing existing session for chat {chat_id}")
+
+            # Check if website URL changed (user switched websites in same chat)
+            if chatbot.website_url != website_url:
+                logger.info(f"🔄 Website changed from {chatbot.website_url} to {website_url}")
+                # Load new vector store for the new website
+                vector_store = load_vector_store(website_url)
+                if vector_store:
+                    chatbot.vector_store = vector_store
+                    chatbot.website_url = website_url
+                    chatbot.is_initialized = True
+                    logger.info(f"✅ Updated session with new website: {website_url}")
+
+            return chatbot
+        else:
+            # Create new chatbot instance for this chat
+            logger.info(f"🆕 Creating new session for chat {chat_id}, website: {website_url}")
+            chatbot = DynamicChatbot()
+
+            # Load vector store for the website
+            vector_store = load_vector_store(website_url)
+            if vector_store:
+                chatbot.vector_store = vector_store
+                chatbot.website_url = website_url
+                chatbot.is_initialized = True
+                self.sessions[chat_id] = chatbot
+                logger.info(f"✅ Session created and cached for chat {chat_id}")
+                return chatbot
+            else:
+                logger.error(f"❌ Failed to load vector store for {website_url}")
+                return None
+
+    def clear_session(self, chat_id):
+        """Remove a chat session"""
+        if chat_id in self.sessions:
+            del self.sessions[chat_id]
+            logger.info(f"🗑️ Cleared session for chat {chat_id}")
+
+    def clear_all_sessions(self):
+        """Clear all sessions (for cleanup)"""
+        self.sessions.clear()
+        logger.info("🗑️ Cleared all sessions")
+
+# Initialize global session manager
+session_manager = ChatSessionManager()
+
 def save_vector_store_mapping(website_url, collection_name):
     # Ensure the directory exists
     os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
@@ -587,9 +644,56 @@ Please provide your answer based only on the website content above.
 # Create a global instance of the chatbot
 chatbot = DynamicChatbot()
 
-def get_response(user_input):
-    """Global function to handle user input and get response"""
-    return chatbot.handle_input(user_input)
+def get_response(user_input, website_url=None, chat_id=None):
+    """
+    Global function to handle user input and get response with website-specific context.
+    Uses session management to maintain state across requests.
+
+    Args:
+        user_input (str): The user's question/message
+        website_url (str): Optional website URL to use specific vector store
+        chat_id (str): Chat ID to maintain session state
+
+    Returns:
+        str: Generated response based on website-specific context
+    """
+    if website_url and chat_id:
+        # Use session manager to get or create chatbot instance
+        logger.info(f"🔍 Getting session for chat {chat_id}, website: {website_url}")
+
+        session_chatbot = session_manager.get_or_create_session(chat_id, website_url)
+        if session_chatbot is None:
+            logger.error(f"❌ Failed to get/create session for chat {chat_id}")
+            return f"Error: Could not load vector store for website: {website_url}"
+
+        # Generate response using the session's chatbot
+        logger.info(f"💬 Generating response using session chatbot")
+        response = session_chatbot.get_response(user_input)
+        logger.info(f"✅ Response generated: {len(response)} chars")
+        return response
+
+    elif website_url:
+        # Legacy support: website_url provided but no chat_id
+        logger.info(f"⚠️ No chat_id provided, using legacy mode for {website_url}")
+        vector_store = load_vector_store(website_url)
+        if vector_store is None:
+            logger.error(f"❌ Vector store not found for {website_url}")
+            return f"Error: Could not load vector store for website: {website_url}"
+
+        # Create temporary chatbot (not cached)
+        temp_chatbot = DynamicChatbot()
+        temp_chatbot.vector_store = vector_store
+        temp_chatbot.website_url = website_url
+        temp_chatbot.is_initialized = True
+
+        return temp_chatbot.get_response(user_input)
+
+    else:
+        # No website_url - fallback to global chatbot instance (legacy behavior)
+        logger.info("⚠️ No website_url or chat_id provided, using global chatbot")
+        # Use the global chatbot instance defined at module level
+        global chatbot
+        return chatbot.handle_input(user_input)
 
 def process_website(url, socketio=None, sid=None, abort_checker=None):
     """Global function to process a website"""

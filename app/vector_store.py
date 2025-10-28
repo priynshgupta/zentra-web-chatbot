@@ -28,11 +28,19 @@ class VectorStoreManager:
     @staticmethod
     def get_embeddings():
         """
-        Get embedding model with improved parameters for better semantic understanding
+        Get embedding model with GPU acceleration for better performance
         """
         try:
-            # Use more advanced sentence transformer model for better semantic understanding
-            return SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+            import torch
+            # Use GPU if available
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            logger.info(f"✅ Using device: {device} for embeddings")
+
+            # Use more advanced sentence transformer model with GPU acceleration
+            return SentenceTransformerEmbeddings(
+                model_name="all-MiniLM-L6-v2",
+                model_kwargs={'device': device}
+            )
         except Exception as e:
             logger.error(f"Error loading embeddings model: {str(e)}")
             # Fallback to a simpler model

@@ -122,27 +122,51 @@ def chat():
         website_url = None
         if chat_id:
             try:
+                # Forward the Authorization header from the original request
+                auth_header = request.headers.get('Authorization')
+                headers = {}
+                if auth_header:
+                    headers['Authorization'] = auth_header
+
                 node_url = f"{NODE_BACKEND_URL}/api/chat/{chat_id}"
-                resp = requests.get(node_url)
+                resp = requests.get(node_url, headers=headers)
                 if resp.status_code == 200:
-                    website_url = resp.json().get("websiteUrl")
+                    chat_data = resp.json()
+                    website_url = chat_data.get("websiteUrl")
+                    logger.info(f"🔍 Retrieved website URL for chat {chat_id}: {website_url}")
+                else:
+                    logger.warning(f"⚠️ Failed to fetch chat data: {resp.status_code}")
             except Exception as e:
+                logger.error(f"❌ Failed to fetch website URL for chat: {e}")
                 return jsonify({"success": False, "error": f"Failed to fetch website URL for chat: {e}"}), 500
 
-        # 2. If website_url is found and chatbot is not initialized for it, process it
-        if website_url:
-            if not chatbot.is_initialized or chatbot.website_url != website_url:
-                success, msg = chatbot.process_website(website_url)
-                if not success:
-                    return jsonify({"success": False, "error": f"Failed to process website: {msg}"}), 500
+        # 2. Get the response with website-specific context and session management
+        logger.info(f"💬 Generating response for chat {chat_id}, website: {website_url}")
+        response = get_response(query, website_url=website_url, chat_id=chat_id)
 
-        # 3. Get the response as usual
-        response = get_response(query)
-        return jsonify({"success": True, "response": response})
+        # Handle both dict and string responses
+        if isinstance(response, dict):
+            if response.get('success'):
+                return jsonify({"success": True, "response": response.get('response')})
+            else:
+                return jsonify({"success": False, "error": response.get('error', 'Unknown error')}), 500
+        else:
+            return jsonify({"success": True, "response": response})
 
     except Exception as e:
         logger.error(f"Error in /chat: {e}")
         logger.error(traceback.format_exc())
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/clear-session/<chat_id>', methods=['POST'])
+def clear_session(chat_id):
+    """Clear chat session (optional endpoint for cleanup)"""
+    try:
+        from app.chatbot import session_manager
+        session_manager.clear_session(chat_id)
+        return jsonify({"success": True, "message": f"Session cleared for chat {chat_id}"})
+    except Exception as e:
+        logger.error(f"Error clearing session: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/process-website', methods=['POST'])
