@@ -49,8 +49,9 @@ class ChatSessionManager:
             # Check if website URL changed (user switched websites in same chat)
             if chatbot.website_url != website_url:
                 logger.info(f"🔄 Website changed from {chatbot.website_url} to {website_url}")
-                # Load new vector store for the new website
-                vector_store = load_vector_store(website_url)
+                # Get collection name from URL and load vector store
+                collection_name = get_collection_name_from_url(website_url)
+                vector_store = load_vector_store(collection_name)
                 if vector_store:
                     chatbot.vector_store = vector_store
                     chatbot.website_url = website_url
@@ -63,8 +64,9 @@ class ChatSessionManager:
             logger.info(f"🆕 Creating new session for chat {chat_id}, website: {website_url}")
             chatbot = DynamicChatbot()
 
-            # Load vector store for the website
-            vector_store = load_vector_store(website_url)
+            # Get collection name from URL and load vector store
+            collection_name = get_collection_name_from_url(website_url)
+            vector_store = load_vector_store(collection_name)
             if vector_store:
                 chatbot.vector_store = vector_store
                 chatbot.website_url = website_url
@@ -102,6 +104,22 @@ def save_vector_store_mapping(website_url, collection_name):
     mapping[website_url] = collection_name
     with open(MAPPING_FILE, 'w') as f:
         json.dump(mapping, f)
+
+def get_collection_name_from_url(website_url):
+    """Get collection name from website URL using mapping file"""
+    if os.path.exists(MAPPING_FILE):
+        with open(MAPPING_FILE, 'r') as f:
+            mapping = json.load(f)
+        collection_name = mapping.get(website_url)
+        if collection_name:
+            logger.info(f"📋 Found collection name for {website_url}: {collection_name}")
+            return collection_name
+
+    # If no mapping found, generate hash-based collection name
+    url_hash = hashlib.sha256(website_url.encode()).hexdigest()[:32]
+    collection_name = f"website_{url_hash}"
+    logger.warning(f"⚠️ No mapping found for {website_url}, using generated name: {collection_name}")
+    return collection_name
 
 class DynamicChatbot:
     def __init__(self):
@@ -675,7 +693,10 @@ def get_response(user_input, website_url=None, chat_id=None):
     elif website_url:
         # Legacy support: website_url provided but no chat_id
         logger.info(f"⚠️ No chat_id provided, using legacy mode for {website_url}")
-        vector_store = load_vector_store(website_url)
+
+        # Get collection name from URL
+        collection_name = get_collection_name_from_url(website_url)
+        vector_store = load_vector_store(collection_name)
         if vector_store is None:
             logger.error(f"❌ Vector store not found for {website_url}")
             return f"Error: Could not load vector store for website: {website_url}"
